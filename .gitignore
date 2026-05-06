@@ -1,0 +1,27 @@
+# Backend
+backend/target/
+backend/.mvn/
+backend/.idea/
+backend/*.iml
+backend/*.iws
+backend/*.ipr
+backend/build/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+frontend/.vite/
+frontend/.vscode/
+
+# Docker
+docker/volumes/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.local
+*.env
