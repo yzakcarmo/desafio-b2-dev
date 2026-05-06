@@ -34,4 +34,28 @@ public class OrderItem {
 
 	@Column(name = "subtotal", nullable = false)
 	private BigDecimal subtotal;
+
+	public UUID getId() { return id; }
+	public void setId(UUID id) { this.id = id; }
+
+	public UUID getOrderId() { return orderId; }
+	public void setOrderId(UUID orderId) { this.orderId = orderId; }
+
+	public String getProductCode() { return productCode; }
+	public void setProductCode(String productCode) { this.productCode = productCode; }
+
+	public String getProductName() { return productName; }
+	public void setProductName(String productName) { this.productName = productName; }
+
+	public Integer getQuantity() { return quantity; }
+	public void setQuantity(Integer quantity) { this.quantity = quantity; }
+
+	public BigDecimal getUnitPrice() { return unitPrice; }
+	public void setUnitPrice(BigDecimal unitPrice) { this.unitPrice = unitPrice; }
+
+	public BigDecimal getListPrice() { return listPrice; }
+	public void setListPrice(BigDecimal listPrice) { this.listPrice = listPrice; }
+
+	public BigDecimal getSubtotal() { return subtotal; }
+	public void setSubtotal(BigDecimal subtotal) { this.subtotal = subtotal; }
 }
