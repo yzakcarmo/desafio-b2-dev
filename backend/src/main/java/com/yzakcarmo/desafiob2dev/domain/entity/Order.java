@@ -1,12 +1,12 @@
 package com.yzakcarmo.desafiob2dev.domain.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import jakarta.persistence.Version;
+import com.yzakcarmo.desafiob2dev.domain.enums.OrderOrigin;
+import com.yzakcarmo.desafiob2dev.domain.enums.OrderStatus;
+import jakarta.persistence.*;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -14,167 +14,102 @@ import java.util.UUID;
 public class Order {
 
 	@Id
+	@GeneratedValue(strategy = GenerationType.UUID)
 	private UUID id;
 
-	@Column(name = "external_reference", unique = true, nullable = false)
+	@Column(name = "external_reference", nullable = false, unique = true, length = 100)
 	private String externalReference;
 
-	@Column(name = "buyer_id", nullable = false)
-	private UUID buyerId;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "buyer_id", nullable = false)
+	private Buyer buyer;
 
-	@Column(name = "seller_id", nullable = false)
-	private UUID sellerId;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "seller_id", nullable = false)
+	private Seller seller;
 
-	@Column(name = "warehouse_id", nullable = false)
-	private UUID warehouseId;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "warehouse_id", nullable = false)
+	private Warehouse warehouse;
 
-	@Column(name = "payment_condition_id", nullable = false)
-	private UUID paymentConditionId;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "payment_condition_id", nullable = false)
+	private PaymentCondition paymentCondition;
 
-	@Column(name = "status", nullable = false)
-	private String status;
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, length = 30)
+	private OrderStatus status = OrderStatus.PENDING;
 
-	@Column(name = "subtotal", nullable = false)
+	@Column(nullable = false, precision = 15, scale = 2)
 	private BigDecimal subtotal;
 
-	@Column(name = "discount_value")
-	private BigDecimal discountValue;
+	@Column(name = "discount_value", precision = 15, scale = 2)
+	private BigDecimal discountValue = BigDecimal.ZERO;
 
-	@Column(name = "total", nullable = false)
+	@Column(nullable = false, precision = 15, scale = 2)
 	private BigDecimal total;
 
-	@Column(name = "origin", nullable = false)
-	private String origin;
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, length = 30)
+	private OrderOrigin origin = OrderOrigin.API;
 
-	@Column(name = "tenant_code", nullable = false)
+	@Column(name = "tenant_code", nullable = false, length = 50)
 	private String tenantCode;
 
-	@Column(name = "created_at")
-	private LocalDateTime createdAt;
+	@Column(name = "created_at", nullable = false, updatable = false)
+	private OffsetDateTime createdAt;
 
 	@Column(name = "last_modified")
-	private LocalDateTime lastModified;
+	private OffsetDateTime lastModified;
 
 	@Version
+	@Column(nullable = false)
 	private Long version;
 
-	public UUID getId() {
-		return id;
+	@OneToMany(mappedBy = "order", cascade = CascadeType.PERSIST, orphanRemoval = true)
+	private List<OrderItem> items = new ArrayList<>();
+
+	@PrePersist
+	protected void onCreate() {
+		this.createdAt = OffsetDateTime.now();
+		this.lastModified = OffsetDateTime.now();
 	}
 
-	public void setId(UUID id) {
-		this.id = id;
+	@PreUpdate
+	protected void onUpdate() {
+		this.lastModified = OffsetDateTime.now();
 	}
 
-	public String getExternalReference() {
-		return externalReference;
+	public void addItem(OrderItem item) {
+		item.setOrder(this);
+		this.items.add(item);
 	}
 
-	public void setExternalReference(String externalReference) {
-		this.externalReference = externalReference;
-	}
-
-	public UUID getBuyerId() {
-		return buyerId;
-	}
-
-	public void setBuyerId(UUID buyerId) {
-		this.buyerId = buyerId;
-	}
-
-	public UUID getSellerId() {
-		return sellerId;
-	}
-
-	public void setSellerId(UUID sellerId) {
-		this.sellerId = sellerId;
-	}
-
-	public UUID getWarehouseId() {
-		return warehouseId;
-	}
-
-	public void setWarehouseId(UUID warehouseId) {
-		this.warehouseId = warehouseId;
-	}
-
-	public UUID getPaymentConditionId() {
-		return paymentConditionId;
-	}
-
-	public void setPaymentConditionId(UUID paymentConditionId) {
-		this.paymentConditionId = paymentConditionId;
-	}
-
-	public String getStatus() {
-		return status;
-	}
-
-	public void setStatus(String status) {
-		this.status = status;
-	}
-
-	public BigDecimal getSubtotal() {
-		return subtotal;
-	}
-
-	public void setSubtotal(BigDecimal subtotal) {
-		this.subtotal = subtotal;
-	}
-
-	public BigDecimal getDiscountValue() {
-		return discountValue;
-	}
-
-	public void setDiscountValue(BigDecimal discountValue) {
-		this.discountValue = discountValue;
-	}
-
-	public BigDecimal getTotal() {
-		return total;
-	}
-
-	public void setTotal(BigDecimal total) {
-		this.total = total;
-	}
-
-	public String getOrigin() {
-		return origin;
-	}
-
-	public void setOrigin(String origin) {
-		this.origin = origin;
-	}
-
-	public String getTenantCode() {
-		return tenantCode;
-	}
-
-	public void setTenantCode(String tenantCode) {
-		this.tenantCode = tenantCode;
-	}
-
-	public LocalDateTime getCreatedAt() {
-		return createdAt;
-	}
-
-	public void setCreatedAt(LocalDateTime createdAt) {
-		this.createdAt = createdAt;
-	}
-
-	public LocalDateTime getLastModified() {
-		return lastModified;
-	}
-
-	public void setLastModified(LocalDateTime lastModified) {
-		this.lastModified = lastModified;
-	}
-
-	public Long getVersion() {
-		return version;
-	}
-
-	public void setVersion(Long version) {
-		this.version = version;
-	}
+	public UUID getId() { return id; }
+	public String getExternalReference() { return externalReference; }
+	public void setExternalReference(String externalReference) { this.externalReference = externalReference; }
+	public Buyer getBuyer() { return buyer; }
+	public void setBuyer(Buyer buyer) { this.buyer = buyer; }
+	public Seller getSeller() { return seller; }
+	public void setSeller(Seller seller) { this.seller = seller; }
+	public Warehouse getWarehouse() { return warehouse; }
+	public void setWarehouse(Warehouse warehouse) { this.warehouse = warehouse; }
+	public PaymentCondition getPaymentCondition() { return paymentCondition; }
+	public void setPaymentCondition(PaymentCondition paymentCondition) { this.paymentCondition = paymentCondition; }
+	public OrderStatus getStatus() { return status; }
+	public void setStatus(OrderStatus status) { this.status = status; }
+	public BigDecimal getSubtotal() { return subtotal; }
+	public void setSubtotal(BigDecimal subtotal) { this.subtotal = subtotal; }
+	public BigDecimal getDiscountValue() { return discountValue; }
+	public void setDiscountValue(BigDecimal discountValue) { this.discountValue = discountValue; }
+	public BigDecimal getTotal() { return total; }
+	public void setTotal(BigDecimal total) { this.total = total; }
+	public OrderOrigin getOrigin() { return origin; }
+	public void setOrigin(OrderOrigin origin) { this.origin = origin; }
+	public String getTenantCode() { return tenantCode; }
+	public void setTenantCode(String tenantCode) { this.tenantCode = tenantCode; }
+	public OffsetDateTime getCreatedAt() { return createdAt; }
+	public OffsetDateTime getLastModified() { return lastModified; }
+	public Long getVersion() { return version; }
+	public List<OrderItem> getItems() { return items; }
 }

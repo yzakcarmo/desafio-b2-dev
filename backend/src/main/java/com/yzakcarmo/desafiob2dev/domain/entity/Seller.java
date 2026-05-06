@@ -1,10 +1,7 @@
 package com.yzakcarmo.desafiob2dev.domain.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import java.time.LocalDateTime;
+import jakarta.persistence.*;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Entity
@@ -12,38 +9,37 @@ import java.util.UUID;
 public class Seller {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "external_reference", unique = true, nullable = false)
+    @Column(name = "external_reference", nullable = false, unique = true, length = 100)
     private String externalReference;
 
-    @Column(name = "name", nullable = false)
+    @Column(nullable = false, length = 255)
     private String name;
 
-    @Column(name = "tenant_code", nullable = false)
+    @Column(name = "tenant_code", nullable = false, length = 50)
     private String tenantCode;
 
-    @Column(name = "enabled")
-    private Boolean enabled;
+    @Column(nullable = false)
+    private Boolean enabled = true;
 
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private OffsetDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = OffsetDateTime.now();
+    }
 
     public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-
     public String getExternalReference() { return externalReference; }
     public void setExternalReference(String externalReference) { this.externalReference = externalReference; }
-
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
-
     public String getTenantCode() { return tenantCode; }
     public void setTenantCode(String tenantCode) { this.tenantCode = tenantCode; }
-
     public Boolean getEnabled() { return enabled; }
     public void setEnabled(Boolean enabled) { this.enabled = enabled; }
-
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public OffsetDateTime getCreatedAt() { return createdAt; }
 }
