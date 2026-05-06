@@ -1,0 +1,59 @@
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
+  application:
+    name: desafio-b2-dev
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/desafiob2dev
+    username: desafio
+    password: desafio123
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        default_schema: public
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+    validate-on-migrate: true
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: desafio
+    password: desafio123
+    listener:
+      simple:
+        acknowledge-mode: manual
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.yzakcarmo: DEBUG
+    org.flywaydb: INFO

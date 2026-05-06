@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
 -- Tenants do sistema
 CREATE TABLE IF NOT EXISTS tenant
 (
