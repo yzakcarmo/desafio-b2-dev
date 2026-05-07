@@ -58,7 +58,7 @@ public interface OrderRepository extends JpaRepository<Order, UUID>, JpaSpecific
     @Query("""
         SELECT COALESCE(SUM(o.total), 0) FROM Order o
         WHERE o.tenantCode = :tenantCode
-          AND o.status = 'CONFIRMED'
+          AND o.status = OrderStatus.CONFIRMED
           AND o.createdAt BETWEEN :dateFrom AND :dateTo
         """)
     BigDecimal sumRevenue(@Param("tenantCode") String tenantCode,
@@ -68,14 +68,13 @@ public interface OrderRepository extends JpaRepository<Order, UUID>, JpaSpecific
     @Query("""
         SELECT COALESCE(AVG(o.total), 0) FROM Order o
         WHERE o.tenantCode = :tenantCode
-          AND o.status = 'CONFIRMED'
+          AND o.status = OrderStatus.CONFIRMED
           AND o.createdAt BETWEEN :dateFrom AND :dateTo
         """)
     BigDecimal avgOrderValue(@Param("tenantCode") String tenantCode,
                              @Param("dateFrom") OffsetDateTime dateFrom,
                              @Param("dateTo") OffsetDateTime dateTo);
 
-    // Top 5 buyers por receita
     @Query("""
         SELECT b.name AS name,
                COUNT(o) AS orderCount,
@@ -83,7 +82,7 @@ public interface OrderRepository extends JpaRepository<Order, UUID>, JpaSpecific
         FROM Order o
         JOIN o.buyer b
         WHERE o.tenantCode = :tenantCode
-          AND o.status = Status
+          AND o.status = OrderStatus.CONFIRMED
           AND o.createdAt BETWEEN :dateFrom AND :dateTo
         GROUP BY b.id, b.name
         ORDER BY totalSpent DESC
@@ -93,7 +92,6 @@ public interface OrderRepository extends JpaRepository<Order, UUID>, JpaSpecific
                                            @Param("dateFrom") OffsetDateTime dateFrom,
                                            @Param("dateTo") OffsetDateTime dateTo);
 
-    // Top 5 produtos por quantidade
     @Query("""
         SELECT i.productCode AS productCode,
                i.productName AS productName,
@@ -101,7 +99,7 @@ public interface OrderRepository extends JpaRepository<Order, UUID>, JpaSpecific
         FROM OrderItem i
         JOIN i.order o
         WHERE o.tenantCode = :tenantCode
-          AND o.status = 'CONFIRMED'
+          AND o.status = OrderStatus.CONFIRMED
           AND o.createdAt BETWEEN :dateFrom AND :dateTo
         GROUP BY i.productCode, i.productName
         ORDER BY totalQuantity DESC

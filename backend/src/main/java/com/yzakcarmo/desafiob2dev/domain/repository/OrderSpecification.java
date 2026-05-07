@@ -21,24 +21,30 @@ public class OrderSpecification {
 
         return (root, query, cb) -> {
 
-            // Força JOIN FETCH apenas em queries de dados, não de count
-            if (query.getResultType() != Long.class && query.getResultType() != long.class) {
-                root.fetch("buyer", JoinType.INNER);
-                root.fetch("seller", JoinType.INNER);
-                root.fetch("warehouse", JoinType.INNER);
-                query.distinct(true);
-            }
+            boolean isCountQuery = query.getResultType() == Long.class || query.getResultType() == long.class;
 
             Predicate predicate = cb.equal(root.get("tenantCode"), tenantCode);
 
-            if (status != null) {
-                predicate = cb.and(predicate, cb.equal(root.get("status"), status));
-            }
+            if (!isCountQuery) {
+                Fetch<Order, Buyer> buyerFetch = root.fetch("buyer", JoinType.INNER);
+                root.fetch("seller", JoinType.INNER);
+                root.fetch("warehouse", JoinType.INNER);
+                query.distinct(true);
 
-            if (buyerRef != null && !buyerRef.isBlank()) {
+                if (buyerRef != null && !buyerRef.isBlank()) {
+                    Join<Order, Buyer> buyerJoin = (Join<Order, Buyer>) buyerFetch;
+                    predicate = cb.and(predicate,
+                            cb.equal(buyerJoin.get("externalReference"), buyerRef));
+                }
+            } else if (buyerRef != null && !buyerRef.isBlank()) {
+                // Count query: join simples sem fetch
                 Join<Order, Buyer> buyer = root.join("buyer", JoinType.INNER);
                 predicate = cb.and(predicate,
                         cb.equal(buyer.get("externalReference"), buyerRef));
+            }
+
+            if (status != null) {
+                predicate = cb.and(predicate, cb.equal(root.get("status"), status));
             }
 
             if (dateFrom != null) {
