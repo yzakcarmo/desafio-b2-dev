@@ -7,6 +7,7 @@ import com.yzakcarmo.desafiob2dev.domain.repository.projection.TopProductProject
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -16,7 +17,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface OrderRepository extends JpaRepository<Order, UUID> {
+public interface OrderRepository extends JpaRepository<Order, UUID>, JpaSpecificationExecutor<Order> {
 
     boolean existsByExternalReferenceAndTenantCode(String externalReference, String tenantCode);
 
@@ -24,7 +25,6 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
             String externalReference, String tenantCode);
 
     // Query de listagem sem itens — evita N+1 na paginação
-    // Os itens são carregados separadamente apenas quando necessário
     @Query("""
             SELECT o FROM Order o
             JOIN FETCH o.buyer b
@@ -52,7 +52,6 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
             """)
     List<Order> findAllWithItemsByIds(@Param("orderIds") List<UUID> orderIds);
 
-    // Busca completa para o endpoint de detalhes
     @Query("""
             SELECT o FROM Order o
             JOIN FETCH o.buyer
@@ -67,7 +66,6 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
             @Param("externalReference") String externalReference,
             @Param("tenantCode") String tenantCode);
 
-    // Contagem por status
     @Query("""
         SELECT COUNT(o) FROM Order o
         WHERE o.tenantCode = :tenantCode
@@ -79,7 +77,6 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
                        @Param("dateFrom") OffsetDateTime dateFrom,
                        @Param("dateTo") OffsetDateTime dateTo);
 
-    // Receita total e ticket médio — só pedidos confirmados
     @Query("""
         SELECT COALESCE(SUM(o.total), 0) FROM Order o
         WHERE o.tenantCode = :tenantCode

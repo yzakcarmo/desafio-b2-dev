@@ -12,6 +12,7 @@ import com.yzakcarmo.desafiob2dev.tenant.TenantContext;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -227,25 +228,33 @@ public class OrderService {
         String tenantCode = TenantContext.getTenant();
         size = Math.min(size, 50);
 
-        OrderStatus orderStatus = status != null ? OrderStatus.valueOf(status) : null;
+        OrderStatus orderStatus = null;
+        if (status != null && !status.isBlank()) {
+            try {
+                orderStatus = OrderStatus.valueOf(status.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new BusinessException("ORD-VALIDATION-001",
+                        org.springframework.http.HttpStatus.BAD_REQUEST,
+                        "Status inválido: " + status);
+            }
+        }
 
         PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
-        // Query 1: busca orders paginadas com buyer, seller, warehouse (sem itens)
-        Page<Order> orderPage = orderRepository.findAllWithFilters(
-                tenantCode, orderStatus, buyerRef, dateFrom, dateTo, pageable);
+        Specification<Order> spec = OrderSpecification.withFilters(
+                tenantCode, orderStatus, buyerRef, dateFrom, dateTo);
 
-        // Query 2: busca itens apenas dos IDs retornados
+        // Query 1: orders paginadas com buyer, seller, warehouse
+        Page<Order> orderPage = orderRepository.findAll(spec, pageable);
+
+        // Query 2: itens apenas dos IDs retornados
         List<UUID> orderIds = orderPage.getContent().stream()
                 .map(Order::getId).toList();
 
         Map<UUID, Integer> itemCountMap = orderIds.isEmpty()
                 ? Map.of()
                 : orderRepository.findAllWithItemsByIds(orderIds).stream()
-                  .collect(Collectors.toMap(
-                          Order::getId,
-                          o -> o.getItems().size()
-                  ));
+                  .collect(Collectors.toMap(Order::getId, o -> o.getItems().size()));
 
         List<OrderSummaryResponse> content = orderPage.getContent().stream()
                 .map(o -> new OrderSummaryResponse(

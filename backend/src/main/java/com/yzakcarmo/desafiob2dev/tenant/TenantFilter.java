@@ -51,7 +51,6 @@ public class TenantFilter implements Filter {
             TenantContext.setTenant(tenantCode.toUpperCase().trim());
             chain.doFilter(request, response);
         } finally {
-            // CRÍTICO: sempre limpar para não vazar entre requests
             TenantContext.clear();
         }
     }
