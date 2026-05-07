@@ -1,7 +1,4 @@
 spring:
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
   application:
     name: desafio-b2-dev
 
@@ -40,6 +37,8 @@ spring:
     listener:
       simple:
         acknowledge-mode: manual
+        retry:
+          enabled: false
 
 server:
   port: 8080
@@ -57,3 +56,9 @@ logging:
   level:
     com.yzakcarmo: DEBUG
     org.flywaydb: INFO
+
+messaging:
+  rabbitmq:
+    dlq-ttl-ms: 30000
+    parking-lot-ttl-days: 30
+    max-retries: 3

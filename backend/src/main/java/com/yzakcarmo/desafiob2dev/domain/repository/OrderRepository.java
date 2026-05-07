@@ -4,8 +4,6 @@ import com.yzakcarmo.desafiob2dev.domain.entity.Order;
 import com.yzakcarmo.desafiob2dev.domain.enums.OrderStatus;
 import com.yzakcarmo.desafiob2dev.domain.repository.projection.TopBuyerProjection;
 import com.yzakcarmo.desafiob2dev.domain.repository.projection.TopProductProjection;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -23,26 +21,6 @@ public interface OrderRepository extends JpaRepository<Order, UUID>, JpaSpecific
 
     Optional<Order> findByExternalReferenceAndTenantCode(
             String externalReference, String tenantCode);
-
-    // Query de listagem sem itens — evita N+1 na paginação
-    @Query("""
-            SELECT o FROM Order o
-            JOIN FETCH o.buyer b
-            JOIN FETCH o.seller s
-            JOIN FETCH o.warehouse w
-            WHERE o.tenantCode = :tenantCode
-              AND (:status IS NULL OR o.status = :status)
-              AND (:buyerRef IS NULL OR b.externalReference = :buyerRef)
-              AND (:dateFrom IS NULL OR o.createdAt >= :dateFrom)
-              AND (:dateTo IS NULL OR o.createdAt <= :dateTo)
-            """)
-    Page<Order> findAllWithFilters(
-            @Param("tenantCode") String tenantCode,
-            @Param("status") OrderStatus status,
-            @Param("buyerRef") String buyerRef,
-            @Param("dateFrom") OffsetDateTime dateFrom,
-            @Param("dateTo") OffsetDateTime dateTo,
-            Pageable pageable);
 
     // Query separada para carregar itens de uma lista de pedidos — evita produto cartesiano com paginação
     @Query("""
@@ -105,7 +83,7 @@ public interface OrderRepository extends JpaRepository<Order, UUID>, JpaSpecific
         FROM Order o
         JOIN o.buyer b
         WHERE o.tenantCode = :tenantCode
-          AND o.status = 'CONFIRMED'
+          AND o.status = Status
           AND o.createdAt BETWEEN :dateFrom AND :dateTo
         GROUP BY b.id, b.name
         ORDER BY totalSpent DESC

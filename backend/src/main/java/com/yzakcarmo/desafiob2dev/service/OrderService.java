@@ -7,6 +7,7 @@ import com.yzakcarmo.desafiob2dev.domain.enums.OrderOrigin;
 import com.yzakcarmo.desafiob2dev.domain.enums.OrderStatus;
 import com.yzakcarmo.desafiob2dev.domain.repository.*;
 import com.yzakcarmo.desafiob2dev.exception.*;
+import com.yzakcarmo.desafiob2dev.infrastructure.messaging.producer.OrderEventPublisher;
 import com.yzakcarmo.desafiob2dev.strategy.*;
 import com.yzakcarmo.desafiob2dev.tenant.TenantContext;
 import org.springframework.data.domain.Page;
@@ -24,6 +25,8 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static java.util.UUID.randomUUID;
+
 @Service
 public class OrderService {
 
@@ -34,6 +37,7 @@ public class OrderService {
     private final ProductPriceRepository productPriceRepository;
     private final PaymentConditionRepository paymentConditionRepository;
     private final TenantStrategyRegistry strategyRegistry;
+    private final OrderEventPublisher eventPublisher;
 
     public OrderService(
             OrderRepository orderRepository,
@@ -42,7 +46,8 @@ public class OrderService {
             WarehouseRepository warehouseRepository,
             ProductPriceRepository productPriceRepository,
             PaymentConditionRepository paymentConditionRepository,
-            TenantStrategyRegistry strategyRegistry) {
+            TenantStrategyRegistry strategyRegistry,
+            OrderEventPublisher eventPublisher) {
         this.orderRepository = orderRepository;
         this.buyerRepository = buyerRepository;
         this.sellerRepository = sellerRepository;
@@ -50,6 +55,7 @@ public class OrderService {
         this.productPriceRepository = productPriceRepository;
         this.paymentConditionRepository = paymentConditionRepository;
         this.strategyRegistry = strategyRegistry;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -194,8 +200,7 @@ public class OrderService {
 
         Order saved = orderRepository.save(order);
 
-        // 8. Publicar evento (implementado na Fase 5)
-        // eventPublisher.publishOrderCreated(saved);
+        eventPublisher.publishOrderCreated(saved, randomUUID().toString());
 
         return new CreateOrderResponse(
                 "ORDER-001",
@@ -319,8 +324,7 @@ public class OrderService {
         order.setStatus(OrderStatus.CANCELLED);
         orderRepository.save(order);
 
-        // Publicar evento (implementado na Fase 5)
-        // eventPublisher.publishOrderCancelled(order);
+        eventPublisher.publishOrderCancelled(order, randomUUID().toString());
     }
 
     private OrderDetailResponse toDetailResponse(Order order) {
