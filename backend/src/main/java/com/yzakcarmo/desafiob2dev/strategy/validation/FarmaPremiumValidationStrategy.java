@@ -1,6 +1,5 @@
 package com.yzakcarmo.desafiob2dev.strategy.validation;
 
-import com.yzakcarmo.desafiob2dev.domain.enums.OrderOrigin;
 import com.yzakcarmo.desafiob2dev.strategy.*;
 
 import java.util.ArrayList;
@@ -20,9 +19,5 @@ public class FarmaPremiumValidationStrategy implements OrderValidationStrategy {
         }
 
         return errors.isEmpty() ? ValidationResult.ok() : ValidationResult.failure(errors);
-    }
-
-    public boolean isBonusOrder(OrderStrategyContext context) {
-        return OrderOrigin.BONUS.equals(context.getOrigin());
     }
 }
