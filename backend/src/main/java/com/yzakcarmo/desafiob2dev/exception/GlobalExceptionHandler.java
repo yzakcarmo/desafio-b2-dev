@@ -3,9 +3,12 @@ package com.yzakcarmo.desafiob2dev.exception;
 import com.yzakcarmo.desafiob2dev.api.dto.response.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.List;
 import java.util.UUID;
@@ -43,9 +46,33 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(body);
     }
 
-    @ExceptionHandler(org.springframework.orm.ObjectOptimisticLockingFailureException.class)
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ErrorResponse> handleMissingParam(MissingServletRequestParameterException ex) {
+        ErrorResponse body = new ErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                "ORD-VALIDATION-001",
+                "Parâmetro obrigatório ausente: " + ex.getParameterName(),
+                List.of(ex.getMessage()),
+                UUID.randomUUID().toString()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        ErrorResponse body = new ErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                "ORD-VALIDATION-001",
+                "Parâmetro com tipo inválido: " + ex.getName(),
+                List.of("Valor recebido: " + ex.getValue()),
+                UUID.randomUUID().toString()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
     public ResponseEntity<ErrorResponse> handleOptimisticLock(
-            org.springframework.orm.ObjectOptimisticLockingFailureException ex) {
+            ObjectOptimisticLockingFailureException ex) {
 
         ErrorResponse body = new ErrorResponse(
                 HttpStatus.CONFLICT.value(),

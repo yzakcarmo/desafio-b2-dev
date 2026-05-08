@@ -31,7 +31,7 @@
 ### Subir todos os serviços
 
 ```bash
-docker compose up --build
+docker compose up -d
 ```
 
 | Serviço | URL |
