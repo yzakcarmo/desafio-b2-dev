@@ -1,54 +1,30 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { listOrders } from '../api/orders'
-import type { OrderSummary, PageResponse } from '../types'
+import { useOrders } from '../hooks/useOrders'
+import type { OrderFilters } from '../api/orders'
 import StatusBadge from '../components/StatusBadge'
 import { formatCurrency, formatDate } from '../utils/format'
 
-interface Filters {
-  status: string
-  buyerRef: string
-  dateFrom: string
-  dateTo: string
-}
-
 export default function Orders() {
-  const [data, setData] = useState<PageResponse<OrderSummary> | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [page, setPage] = useState(0)
-  const [filters, setFilters] = useState<Filters>({ status: '', buyerRef: '', dateFrom: '', dateTo: '' })
+  const { data, loading, error, page, search, goToPage, cancel } = useOrders()
+  const [filters, setFilters] = useState<OrderFilters>({})
 
-  async function load(currentPage = page, currentFilters = filters) {
-    setLoading(true)
-    setError(null)
-    try {
-      setData(await listOrders({
-        page: currentPage,
-        size: 20,
-        status: currentFilters.status || undefined,
-        buyerRef: currentFilters.buyerRef || undefined,
-        dateFrom: currentFilters.dateFrom ? new Date(currentFilters.dateFrom).toISOString() : undefined,
-        dateTo: currentFilters.dateTo ? new Date(currentFilters.dateTo).toISOString() : undefined,
-      }))
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Erro desconhecido')
-    } finally {
-      setLoading(false)
-    }
-  }
+  useEffect(() => { search({}) }, [])
 
-  useEffect(() => { load(0, filters) }, [])
-
-  function handleSearch(e: React.FormEvent<HTMLFormElement>) {
+  function handleSearch(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
-    setPage(0)
-    load(0, filters)
+    const f: OrderFilters = {
+      status: filters.status || undefined,
+      buyerRef: filters.buyerRef || undefined,
+      dateFrom: filters.dateFrom ? new Date(filters.dateFrom as string).toISOString() : undefined,
+      dateTo: filters.dateTo ? new Date(filters.dateTo as string).toISOString() : undefined,
+    }
+    search(f)
   }
 
-  function goToPage(p: number) {
-    setPage(p)
-    load(p, filters)
+  async function handleCancel(externalReference: string) {
+    if (!confirm(`Cancelar o pedido ${externalReference}?`)) return
+    await cancel(externalReference)
   }
 
   return (
@@ -60,13 +36,12 @@ export default function Orders() {
         </Link>
       </div>
 
-      {/* Filtros */}
       <form onSubmit={handleSearch} className="bg-white rounded-xl border border-gray-200 p-4">
         <div className="flex flex-wrap gap-4 items-end">
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">Status</label>
             <select
-              value={filters.status}
+              value={filters.status ?? ''}
               onChange={e => setFilters(f => ({ ...f, status: e.target.value }))}
               className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
@@ -80,7 +55,7 @@ export default function Orders() {
             <label className="block text-xs font-medium text-gray-500 mb-1">Comprador (ref)</label>
             <input
               type="text"
-              value={filters.buyerRef}
+              value={filters.buyerRef ?? ''}
               onChange={e => setFilters(f => ({ ...f, buyerRef: e.target.value }))}
               placeholder="ex: BUYER-001"
               className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -90,7 +65,7 @@ export default function Orders() {
             <label className="block text-xs font-medium text-gray-500 mb-1">De</label>
             <input
               type="datetime-local"
-              value={filters.dateFrom}
+              value={filters.dateFrom ?? ''}
               onChange={e => setFilters(f => ({ ...f, dateFrom: e.target.value }))}
               className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -99,7 +74,7 @@ export default function Orders() {
             <label className="block text-xs font-medium text-gray-500 mb-1">Até</label>
             <input
               type="datetime-local"
-              value={filters.dateTo}
+              value={filters.dateTo ?? ''}
               onChange={e => setFilters(f => ({ ...f, dateTo: e.target.value }))}
               className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -122,32 +97,43 @@ export default function Orders() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-xs font-medium text-gray-500 uppercase bg-gray-50 border-b border-gray-200">
-                  <th className="px-6 py-3 text-left">Referência</th>
-                  <th className="px-6 py-3 text-left">Comprador</th>
-                  <th className="px-6 py-3 text-left">Vendedor</th>
-                  <th className="px-6 py-3 text-left">Status</th>
-                  <th className="px-6 py-3 text-right">Total</th>
-                  <th className="px-6 py-3 text-left">Criado em</th>
+                  <th className="px-4 py-3 text-left">Referência</th>
+                  <th className="px-4 py-3 text-left">Comprador</th>
+                  <th className="px-4 py-3 text-left">Vendedor</th>
+                  <th className="px-4 py-3 text-left">Status</th>
+                  <th className="px-4 py-3 text-right">Total</th>
+                  <th className="px-4 py-3 text-left">Criado em</th>
+                  <th className="px-4 py-3"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {data?.content.map(order => (
                   <tr key={order.orderId} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3">
                       <Link to={`/orders/${order.externalReference}`} className="text-blue-600 hover:text-blue-800 font-medium">
                         {order.externalReference}
                       </Link>
                     </td>
-                    <td className="px-6 py-4 text-gray-700">{order.buyerName}</td>
-                    <td className="px-6 py-4 text-gray-700">{order.sellerName}</td>
-                    <td className="px-6 py-4"><StatusBadge status={order.status} /></td>
-                    <td className="px-6 py-4 text-right font-medium text-gray-900">{formatCurrency(order.total)}</td>
-                    <td className="px-6 py-4 text-gray-500">{formatDate(order.createdAt)}</td>
+                    <td className="px-4 py-3 text-gray-700">{order.buyerName}</td>
+                    <td className="px-4 py-3 text-gray-700">{order.sellerName}</td>
+                    <td className="px-4 py-3"><StatusBadge status={order.status} /></td>
+                    <td className="px-4 py-3 text-right font-medium text-gray-900">{formatCurrency(order.total)}</td>
+                    <td className="px-4 py-3 text-gray-500">{formatDate(order.createdAt)}</td>
+                    <td className="px-4 py-3 text-right">
+                      {(order.status === 'PENDING' || order.status === 'CONFIRMED') && (
+                        <button
+                          onClick={() => handleCancel(order.externalReference)}
+                          className="text-xs text-red-500 hover:text-red-700 font-medium px-2 py-1 rounded hover:bg-red-50"
+                        >
+                          Cancelar
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))}
                 {!data?.content.length && (
                   <tr>
-                    <td colSpan={6} className="px-6 py-10 text-center text-gray-400 text-sm">
+                    <td colSpan={7} className="px-6 py-10 text-center text-gray-400 text-sm">
                       Nenhum pedido encontrado
                     </td>
                   </tr>
@@ -159,19 +145,11 @@ export default function Orders() {
               <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
                 <p className="text-sm text-gray-500">{data.totalElements} pedidos</p>
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => goToPage(page - 1)}
-                    disabled={page === 0}
-                    className="px-3 py-1 text-sm border border-gray-300 rounded-lg disabled:opacity-40 hover:bg-gray-50"
-                  >
+                  <button onClick={() => goToPage(page - 1)} disabled={page === 0} className="px-3 py-1 text-sm border border-gray-300 rounded-lg disabled:opacity-40 hover:bg-gray-50">
                     ← Anterior
                   </button>
                   <span className="text-sm text-gray-600">{page + 1} / {data.totalPages}</span>
-                  <button
-                    onClick={() => goToPage(page + 1)}
-                    disabled={page >= data.totalPages - 1}
-                    className="px-3 py-1 text-sm border border-gray-300 rounded-lg disabled:opacity-40 hover:bg-gray-50"
-                  >
+                  <button onClick={() => goToPage(page + 1)} disabled={page >= data.totalPages - 1} className="px-3 py-1 text-sm border border-gray-300 rounded-lg disabled:opacity-40 hover:bg-gray-50">
                     Próxima →
                   </button>
                 </div>

@@ -1,40 +1,9 @@
-import { useState, useEffect } from 'react'
-import { getStatistics } from '../api/orders'
-import type { OrderStatistics } from '../types'
+import { useEffect } from 'react'
+import { useStatistics } from '../hooks/useStatistics'
 import { formatCurrency } from '../utils/format'
 
-function toISO(localDt: string) {
-  return new Date(localDt).toISOString()
-}
-
-function defaultRange() {
-  const now = new Date()
-  const from = new Date(now.getFullYear(), now.getMonth(), 1)
-  return {
-    from: from.toISOString().slice(0, 16),
-    to: now.toISOString().slice(0, 16),
-  }
-}
-
 export default function Dashboard() {
-  const range = defaultRange()
-  const [dateFrom, setDateFrom] = useState(range.from)
-  const [dateTo, setDateTo] = useState(range.to)
-  const [stats, setStats] = useState<OrderStatistics | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  async function load() {
-    setLoading(true)
-    setError(null)
-    try {
-      setStats(await getStatistics(toISO(dateFrom), toISO(dateTo)))
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Erro desconhecido')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const { stats, loading, error, dateFrom, setDateFrom, dateTo, setDateTo, load } = useStatistics()
 
   useEffect(() => { load() }, [])
 
@@ -42,7 +11,6 @@ export default function Dashboard() {
     <div className="p-6 space-y-6">
       <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
 
-      {/* Filtro de período */}
       <div className="bg-white rounded-xl border border-gray-200 p-4">
         <div className="flex flex-wrap gap-4 items-end">
           <div>
@@ -64,7 +32,7 @@ export default function Dashboard() {
             />
           </div>
           <button
-            onClick={load}
+            onClick={() => load()}
             disabled={loading}
             className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50"
           >
@@ -79,7 +47,6 @@ export default function Dashboard() {
 
       {stats && (
         <>
-          {/* Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
             <StatCard label="Total de Pedidos" value={String(stats.totalOrders)} />
             <StatCard label="Confirmados" value={String(stats.confirmedOrders)} valueClass="text-green-600" />
@@ -88,7 +55,6 @@ export default function Dashboard() {
             <StatCard label="Ticket Médio" value={formatCurrency(stats.averageOrderValue)} />
           </div>
 
-          {/* Tabelas */}
           <div className="grid lg:grid-cols-2 gap-6">
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-200">
@@ -110,7 +76,7 @@ export default function Dashboard() {
                       <td className="px-6 py-3 text-right font-medium text-gray-900">{formatCurrency(b.totalSpent)}</td>
                     </tr>
                   ))}
-                  {stats.topBuyers.length === 0 && (
+                  {!stats.topBuyers.length && (
                     <tr><td colSpan={3} className="px-6 py-4 text-center text-gray-400 text-xs">Sem dados</td></tr>
                   )}
                 </tbody>
@@ -137,7 +103,7 @@ export default function Dashboard() {
                       <td className="px-6 py-3 text-right font-medium text-gray-900">{p.totalQuantity}</td>
                     </tr>
                   ))}
-                  {stats.topProducts.length === 0 && (
+                  {!stats.topProducts.length && (
                     <tr><td colSpan={3} className="px-6 py-4 text-center text-gray-400 text-xs">Sem dados</td></tr>
                   )}
                 </tbody>

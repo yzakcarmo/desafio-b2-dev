@@ -1,45 +1,30 @@
-import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { getOrder, cancelOrder } from '../api/orders'
-import type { OrderDetail as OrderDetailType } from '../types'
+import { useParams, Link, useLocation } from 'react-router-dom'
+import { useOrderDetail } from '../hooks/useOrderDetail'
+import { ApiErrorBanner } from './CreateOrder'
+import { ApiError } from '../api/client'
+import type { CreateOrderResponse } from '../types'
 import StatusBadge from '../components/StatusBadge'
 import { formatCurrency, formatDate } from '../utils/format'
 
 export default function OrderDetail() {
   const { ref } = useParams<{ ref: string }>()
+  const location = useLocation()
+  const creationResult = (location.state as { creationResult?: CreateOrderResponse } | null)?.creationResult
 
-  const [order, setOrder] = useState<OrderDetailType | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [cancelling, setCancelling] = useState(false)
-
-  useEffect(() => {
-    if (!ref) return
-    getOrder(ref)
-      .then(setOrder)
-      .catch(e => setError(e instanceof Error ? e.message : 'Erro desconhecido'))
-      .finally(() => setLoading(false))
-  }, [ref])
+  const { order, loading, error, cancelling, cancel } = useOrderDetail(ref)
 
   async function handleCancel() {
     if (!order || !confirm('Confirmar cancelamento do pedido?')) return
-    setCancelling(true)
-    try {
-      await cancelOrder(order.externalReference)
-      setOrder(prev => prev ? { ...prev, status: 'CANCELLED' } : null)
-    } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : 'Erro ao cancelar')
-    } finally {
-      setCancelling(false)
-    }
+    await cancel()
   }
 
   if (loading) return <div className="p-6 text-gray-400 text-sm">Carregando...</div>
-  if (error) return (
-    <div className="p-6">
-      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">{error}</div>
-    </div>
-  )
+
+  if (error) {
+    const apiError = new ApiError({ status: 0, code: 'ERROR', message: error })
+    return <div className="p-6"><ApiErrorBanner error={apiError} /></div>
+  }
+
   if (!order) return null
 
   const canCancel = order.status === 'PENDING' || order.status === 'CONFIRMED'
@@ -68,11 +53,44 @@ export default function OrderDetail() {
         )}
       </div>
 
+      {/* Resultado das strategies — exibido apenas ao vir do fluxo de criação */}
+      {creationResult && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 space-y-3">
+          <h2 className="text-sm font-semibold text-blue-800">Pedido criado com sucesso</h2>
+          <div className="grid sm:grid-cols-3 gap-4 text-sm">
+            <div>
+              <p className="text-xs text-blue-600 font-medium uppercase mb-1">Precificação</p>
+              <p className="text-blue-900">{creationResult.data.pricing.description}</p>
+              <p className="text-blue-700">{formatCurrency(creationResult.data.pricing.subtotal)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-blue-600 font-medium uppercase mb-1">Desconto</p>
+              <p className="text-blue-900">{creationResult.data.discount.description}</p>
+              <p className="text-blue-700">
+                {formatCurrency(creationResult.data.discount.value)}
+                {creationResult.data.discount.percentage > 0 && ` (${creationResult.data.discount.percentage}%)`}
+                {creationResult.data.discount.freeShipping && ' · Frete grátis'}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-blue-600 font-medium uppercase mb-1">Validação</p>
+              {creationResult.data.validation.warnings.length === 0 ? (
+                <p className="text-green-700">Sem alertas</p>
+              ) : (
+                <ul className="space-y-0.5">
+                  {creationResult.data.validation.warnings.map((w, i) => (
+                    <li key={i} className="text-yellow-700 text-xs">⚠ {w}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-3">
-          <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-100 pb-3">
-            Valores
-          </h2>
+          <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-100 pb-3">Valores</h2>
           <InfoRow label="Subtotal" value={formatCurrency(order.subtotal)} />
           <InfoRow label="Desconto" value={formatCurrency(order.discountValue)} valueClass="text-red-600" />
           <InfoRow label="Total" value={formatCurrency(order.total)} valueClass="text-green-700 font-bold text-base" />
@@ -81,9 +99,7 @@ export default function OrderDetail() {
         </div>
 
         <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-3">
-          <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-100 pb-3">
-            Partes
-          </h2>
+          <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide border-b border-gray-100 pb-3">Partes</h2>
           <InfoRow label="Comprador" value={`${order.buyer.name} (${order.buyer.externalReference})`} />
           <InfoRow label="Vendedor" value={`${order.seller.name} (${order.seller.externalReference})`} />
           <InfoRow label="Armazém" value={`${order.warehouse.name} (${order.warehouse.externalReference})`} />
