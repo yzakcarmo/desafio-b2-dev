@@ -1,6 +1,6 @@
 import { useParams, Link, useLocation } from 'react-router-dom'
 import { useOrderDetail } from '../hooks/useOrderDetail'
-import { ApiErrorBanner } from './CreateOrder'
+import ApiErrorBanner from '../components/ApiErrorBanner'
 import { ApiError } from '../api/client'
 import type { CreateOrderResponse } from '../types'
 import StatusBadge from '../components/StatusBadge'

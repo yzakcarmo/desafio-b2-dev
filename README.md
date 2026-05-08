@@ -1,9 +1,5 @@
 # Desafio Técnico - Desenvolvedor Full Stack Sênior
 
-Aplicação full stack de gestão de pedidos com suporte a multi-tenancy, processamento assíncrono via mensageria e estratégias de precificação e validação configuráveis por tenant.
-
----
-
 ## Tecnologias
 
 ### Backend
@@ -27,22 +23,44 @@ Aplicação full stack de gestão de pedidos com suporte a multi-tenancy, proces
 
 ---
 
+## Como Executar
+
+### Pré-requisitos
+- Docker e Docker Compose instalados
+
+### Subir todos os serviços
+
+```bash
+docker compose up --build
+```
+
+| Serviço | URL |
+|---------|-----|
+| Frontend | http://localhost:3000 |
+| API Backend | http://localhost:8080 |
+| RabbitMQ Management | http://localhost:15672 (user: `desafio` / pass: `desafio123`) |
+| PostgreSQL | `localhost:5432` (db: `desafiob2dev` / user: `desafio` / pass: `desafio123`) |
+
+O backend aguarda o PostgreSQL e o RabbitMQ estarem saudáveis antes de iniciar. As migrations do Flyway são executadas automaticamente na inicialização, incluindo dados de seed para testes.
+
+---
+
 ## Arquitetura
 
 ```
 ┌─────────────────────────────────────────────────┐
-│                  Docker Compose                  │
-│                                                  │
+│                  Docker Compose                 │
+│                                                 │
 │  ┌──────────┐    ┌──────────┐    ┌───────────┐  │
-│  │ Frontend │───▶│ Backend  │───▶│PostgreSQL │  │
+│  │ Frontend │──▶│ Backend   │──▶│PostgreSQL │  │
 │  │  :3000   │    │  :8080   │    │   :5432   │  │
 │  │  (Nginx) │    │  (Java)  │    └───────────┘  │
 │  └──────────┘    └────┬─────┘                   │
-│                       │        ┌───────────┐     │
-│                       └───────▶│ RabbitMQ  │     │
-│                                │   :5672   │     │
-│                                │  UI:15672 │     │
-│                                └───────────┘     │
+│                       │        ┌───────────┐    │
+│                       └──────▶│ RabbitMQ   │    │
+│                                │   :5672   │    │
+│                                │  UI:15672 │    │
+│                                └───────────┘    │
 └─────────────────────────────────────────────────┘
 ```
 
@@ -114,31 +132,13 @@ frontend/
     │   ├── CreateOrder.tsx     # Formulário de criação
     │   └── OrderDetail.tsx     # Detalhe do pedido
     ├── components/
+    │   ├── ApiErrorBanner.tsx  # Exibição de erros da API
     │   ├── Layout.tsx
     │   ├── StatusBadge.tsx
     │   └── TenantModal.tsx
     ├── types/index.ts
     └── utils/format.ts
 ```
-
----
-
-## Multi-Tenancy
-
-O tenant é identificado pelo header `x-tenant` em cada requisição. O frontend injeta esse header automaticamente via interceptor do Axios com base na configuração armazenada no `localStorage`.
-
-Tenants disponíveis (seeds):
-
-| Código | Perfil |
-|--------|--------|
-| `FARMA-DEFAULT` | Padrão — regras base de validação e desconto |
-| `FARMA-ECONOMIA` | Economia — estratégia com foco em preço reduzido |
-| `FARMA-PREMIUM` | Premium — estratégia com condições especiais |
-
-Cada tenant possui implementações próprias de:
-- **Validação** (`OrderValidationStrategy`)
-- **Precificação** (`OrderPricingStrategy`)
-- **Desconto** (`OrderDiscountStrategy`)
 
 ---
 
@@ -168,35 +168,3 @@ Ao criar um pedido, o backend publica um evento na exchange fanout `order.events
 | `order.notification` | Envio de notificações |
 | `order.process.dlq` | Dead-letter com TTL de 30s |
 | `order.process.parking-lot` | Mensagens não processáveis (TTL de 30 dias) |
-
----
-
-## Como Executar
-
-### Pré-requisitos
-- Docker e Docker Compose instalados
-
-### Subir todos os serviços
-
-```bash
-docker compose up --build
-```
-
-| Serviço | URL |
-|---------|-----|
-| Frontend | http://localhost:3000 |
-| API Backend | http://localhost:8080 |
-| RabbitMQ Management | http://localhost:15672 (user: `desafio` / pass: `desafio123`) |
-| PostgreSQL | `localhost:5432` (db: `desafiob2dev` / user: `desafio` / pass: `desafio123`) |
-
-O backend aguarda o PostgreSQL e o RabbitMQ estarem saudáveis antes de iniciar. As migrations do Flyway são executadas automaticamente na inicialização, incluindo dados de seed para testes.
-
----
-
-## Padrões Aplicados
-
-- **Strategy Pattern** — comportamento por tenant (validação, precificação, desconto)
-- **Repository Pattern** — abstração de acesso a dados via Spring Data JPA
-- **Event-Driven** — pedidos publicam eventos para processamento assíncrono
-- **Optimistic Locking** — campo `@Version` em `Order` e `Buyer` para controle de concorrência
-- **Global Exception Handler** — respostas de erro padronizadas com código, mensagem e traceId
