@@ -12,10 +12,13 @@ interface TenantContextValue extends TenantConfig {
 const TenantContext = createContext<TenantContextValue | null>(null)
 
 export function TenantProvider({ children }: { children: ReactNode }) {
-  const [config, setConfigState] = useState<TenantConfig>(() => ({
-    tenant: localStorage.getItem('tenant') ?? 'FARMA_DEFAULT',
-    authToken: localStorage.getItem('authToken') ?? 'Bearer token',
-  }))
+  const [config, setConfigState] = useState<TenantConfig>(() => {
+    const tenant = localStorage.getItem('tenant') ?? 'FARMA-DEFAULT'
+    const authToken = localStorage.getItem('authToken') ?? 'Bearer token'
+    localStorage.setItem('tenant', tenant)
+    localStorage.setItem('authToken', authToken)
+    return { tenant, authToken }
+  })
 
   function setConfig(newConfig: TenantConfig) {
     setConfigState(newConfig)

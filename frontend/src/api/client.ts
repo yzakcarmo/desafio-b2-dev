@@ -1,30 +1,47 @@
+import axios, { type AxiosError } from 'axios'
+
+export interface ApiErrorData {
+  status: number
+  code: string
+  message: string
+  details?: string[]
+  traceId?: string
+}
+
 export class ApiError extends Error {
-  constructor(public status: number, message: string) {
-    super(message)
+  readonly status: number
+  readonly code: string
+  readonly details: string[]
+  readonly traceId?: string
+
+  constructor(data: ApiErrorData) {
+    super(data.message)
+    this.status = data.status
+    this.code = data.code
+    this.details = data.details ?? []
+    this.traceId = data.traceId
   }
 }
 
-function getHeaders(): Record<string, string> {
-  return {
-    'Content-Type': 'application/json',
-    'x-tenant': localStorage.getItem('tenant') ?? '',
-    'Authorization': localStorage.getItem('authToken') ?? '',
-  }
-}
+// Instância Axios com interceptor de headers — equivale a um HttpInterceptor no Angular
+export const api = axios.create({ baseURL: '/api/v1' })
 
-export async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(`/api/v1${path}`, {
-    ...options,
-    headers: { ...getHeaders(), ...options?.headers },
-  })
+api.interceptors.request.use(config => {
+  config.headers['x-tenant'] = localStorage.getItem('tenant') ?? ''
+  config.headers['Authorization'] = localStorage.getItem('authToken') ?? ''
+  return config
+})
 
-  if (response.status === 204) return undefined as T
-
-  const data = await response.json().catch(() => null)
-
-  if (!response.ok) {
-    throw new ApiError(response.status, data?.message ?? `Erro ${response.status}`)
-  }
-
-  return data as T
-}
+api.interceptors.response.use(
+  response => response,
+  (error: AxiosError<ApiErrorData>) => {
+    const data = error.response?.data
+    throw new ApiError({
+      status: error.response?.status ?? 0,
+      code: data?.code ?? 'UNKNOWN',
+      message: data?.message ?? error.message ?? 'Erro desconhecido',
+      details: data?.details,
+      traceId: data?.traceId,
+    })
+  },
+)
