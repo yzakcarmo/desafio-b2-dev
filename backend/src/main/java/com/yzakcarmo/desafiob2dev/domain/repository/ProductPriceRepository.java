@@ -1,7 +1,7 @@
 package com.yzakcarmo.desafiob2dev.domain.repository;
 
 import com.yzakcarmo.desafiob2dev.domain.entity.ProductPrice;
-import com.yzakcarmo.desafiob2dev.domain.repository.projection.ListProjection;
+import com.yzakcarmo.desafiob2dev.domain.repository.projection.ProductListProjection;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -25,9 +25,10 @@ public interface ProductPriceRepository extends JpaRepository<ProductPrice, UUID
 
     @Query("""
         SELECT p.productCode AS externalReference,
-               p.productName AS name
+               p.productName AS name,
+               p.unitPrice AS price
         FROM ProductPrice p
         WHERE p.warehouse.id = :warehouseId AND p.enabled = true
         """)
-    List<ListProjection> listAllToOrder(@Param("warehouseId") UUID warehouseId);
+    List<ProductListProjection> listAllToOrder(@Param("warehouseId") UUID warehouseId);
 }

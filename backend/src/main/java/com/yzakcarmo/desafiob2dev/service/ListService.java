@@ -1,6 +1,7 @@
 package com.yzakcarmo.desafiob2dev.service;
 
 import com.yzakcarmo.desafiob2dev.api.dto.response.ListResponse;
+import com.yzakcarmo.desafiob2dev.api.dto.response.ProductListResponse;
 import com.yzakcarmo.desafiob2dev.domain.repository.BuyerRepository;
 import com.yzakcarmo.desafiob2dev.domain.repository.SellerRepository;
 import com.yzakcarmo.desafiob2dev.domain.repository.WarehouseRepository;
@@ -69,10 +70,10 @@ public class ListService {
                 .toList();
     }
 
-    public List<ListResponse> listProducts(UUID warehouseId) {
+    public List<ProductListResponse> listProducts(UUID warehouseId) {
         return productPriceRepository.listAllToOrder(warehouseId)
                 .stream()
-                .map(p -> new ListResponse(p.getName(), p.getExternalReference(), null))
+                .map(p -> new ProductListResponse(p.getName(), p.getExternalReference(), p.getPrice()))
                 .toList();
     }
 }

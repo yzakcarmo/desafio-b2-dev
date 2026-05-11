@@ -1,6 +1,7 @@
 package com.yzakcarmo.desafiob2dev.api.controller;
 
 import com.yzakcarmo.desafiob2dev.api.dto.response.ListResponse;
+import com.yzakcarmo.desafiob2dev.api.dto.response.ProductListResponse;
 import com.yzakcarmo.desafiob2dev.service.ListService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -42,7 +43,7 @@ public class ListController {
     }
 
     @GetMapping("/products")
-    public ResponseEntity<List<ListResponse>> listProducts(
+    public ResponseEntity<List<ProductListResponse>> listProducts(
             @RequestParam(name = "warehouseId", required = false) UUID warehouseId
     ) {
         return ResponseEntity.ok(service.listProducts(warehouseId));
