@@ -17,7 +17,7 @@ public class FarmaPremiumDiscountStrategy implements OrderDiscountStrategy {
         BigDecimal rate = BASE_DISCOUNT_RATE;
         String description = "Desconto premium 8%";
 
-        if (context.getMaxInstallments() == 1) {
+        if (context.maxInstallments() == 1) {
             rate = BASE_DISCOUNT_RATE.add(EXTRA_DISCOUNT_RATE);
             description = "Desconto premium 8% + 3% pagamento à vista";
         }

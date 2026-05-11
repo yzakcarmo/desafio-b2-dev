@@ -28,12 +28,12 @@ public class FarmaEconomiaValidationStrategy implements OrderValidationStrategy 
                     "Horário atual: " + hour + "h");
         }
 
-        if (context.getRawSubtotal().compareTo(MIN_ORDER_VALUE) < 0) {
-            errors.add("Pedido mínimo de R$ 200,00. Valor atual: R$ " + context.getRawSubtotal());
+        if (context.rawSubtotal().compareTo(MIN_ORDER_VALUE) < 0) {
+            errors.add("Pedido mínimo de R$ 200,00. Valor atual: R$ " + context.rawSubtotal());
         }
 
-        if (context.getTotalItems() > MAX_ITEMS) {
-            errors.add("Máximo de " + MAX_ITEMS + " itens por pedido. Quantidade atual: " + context.getTotalItems());
+        if (context.totalItems() > MAX_ITEMS) {
+            errors.add("Máximo de " + MAX_ITEMS + " itens por pedido. Quantidade atual: " + context.totalItems());
         }
 
         return errors.isEmpty() ? ValidationResult.ok() : ValidationResult.failure(errors);

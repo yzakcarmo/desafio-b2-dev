@@ -12,7 +12,7 @@ public class FarmaPremiumPricingStrategy implements OrderPricingStrategy {
 
     @Override
     public PricingResult calculate(OrderStrategyContext context) {
-        BigDecimal rawSubtotal = context.getItems().stream()
+        BigDecimal rawSubtotal = context.items().stream()
                 .map(item -> item.unitPrice().multiply(BigDecimal.valueOf(item.quantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
