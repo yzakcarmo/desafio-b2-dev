@@ -2,6 +2,7 @@ import { api } from './client'
 import type {
   OrderSummary,
   OrderDetail,
+  ListResponse,
   PageResponse,
   OrderStatistics,
   CreateOrderRequest,
@@ -38,5 +39,30 @@ export async function cancelOrder(externalReference: string): Promise<void> {
 
 export async function getStatistics(dateFrom: string, dateTo: string): Promise<OrderStatistics> {
   const { data } = await api.get('/orders/statistics', { params: { dateFrom, dateTo } })
+  return data
+}
+
+export async function getBuyers(): Promise<ListResponse[]> {
+  const { data } = await api.get('/list/buyers')
+  return data
+}
+
+export async function getSellers(): Promise<ListResponse[]> {
+  const { data } = await api.get('/list/sellers')
+  return data
+}
+
+export async function getPaymentConditions(): Promise<ListResponse[]> {
+  const { data } = await api.get('/list/payment-conditions')
+  return data
+}
+
+export async function getWarehouses(sellerId: string): Promise<ListResponse[]> {
+  const { data } = await api.get('/list/warehouses', { params: { sellerId } })
+  return data
+}
+
+export async function getProducts(warehouseId: string): Promise<ListResponse[]> {
+  const { data } = await api.get('/list/products', { params: { warehouseId } })
   return data
 }

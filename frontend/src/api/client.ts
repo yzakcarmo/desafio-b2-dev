@@ -23,7 +23,6 @@ export class ApiError extends Error {
   }
 }
 
-// Instância Axios com interceptor de headers — equivale a um HttpInterceptor no Angular
 export const api = axios.create({ baseURL: '/api/v1' })
 
 api.interceptors.request.use(config => {
