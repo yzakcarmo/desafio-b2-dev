@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createOrder } from '../api/orders'
 import { ApiError } from '../api/client'
-import { useTenant } from '../context/TenantContext'
-import { getMockData } from '../data/mockData'
+import { useList } from '../hooks/useList'
 import ApiErrorBanner from '../components/ApiErrorBanner'
+import { formatCurrency } from '../utils/format'
 
 interface Item {
   productCode: string
@@ -34,8 +34,23 @@ function validate(form: Record<string, string>, items: Item[]): FormErrors {
 
 export default function CreateOrder() {
   const navigate = useNavigate()
-  const { tenant } = useTenant()
-  const mockData = getMockData(tenant)
+  const {
+    buyers,
+    sellers,
+    paymentConditions,
+    warehouses,
+    products,
+    selectedSeller,
+    selectedWarehouse,
+    loadingBase,
+    loadingWarehouses,
+    loadingProducts,
+    errorBase,
+    errorWarehouses,
+    errorProducts,
+    setSelectedSeller,
+    setSelectedWarehouse,
+  } = useList()
 
   const [submitting, setSubmitting] = useState(false)
   const [apiError, setApiError] = useState<ApiError | null>(null)
@@ -48,10 +63,25 @@ export default function CreateOrder() {
     paymentConditionCode: '',
   })
   const [items, setItems] = useState<Item[]>([{ productCode: '', quantity: 1 }])
+  const subtotal = items.reduce((sum, item) => {
+    const product = products.find(({ value }) => value === item.productCode)
+    return sum + (product?.price ?? 0) * item.quantity
+  }, 0)
 
   function setField(field: keyof typeof form, value: string) {
     setForm(f => ({ ...f, [field]: value }))
     setFormErrors(e => ({ ...e, [field]: undefined }))
+
+    if (field === 'sellerReference') {
+      const seller = sellers.find(s => s.value === value)
+      setSelectedSeller(seller?.id ?? '')
+      setForm(f => ({ ...f, warehouseReference: '' }))
+      setItems([{ productCode: '', quantity: 1 }])
+    } else if (field === 'warehouseReference') {
+      const warehouse = warehouses.find(w => w.value === value)
+      setSelectedWarehouse(warehouse?.id ?? '')
+      setItems([{ productCode: '', quantity: 1 }])
+    }
   }
 
   function addItem() {
@@ -93,6 +123,9 @@ export default function CreateOrder() {
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Novo Pedido</h1>
 
       {apiError && <ApiErrorBanner error={apiError} />}
+      {errorBase && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mb-6">{errorBase}</div>}
+      {errorWarehouses && <div className="bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3 rounded-lg text-sm mb-6">{errorWarehouses}</div>}
+      {errorProducts && <div className="bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3 rounded-lg text-sm mb-6">{errorProducts}</div>}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
@@ -112,30 +145,30 @@ export default function CreateOrder() {
 
           <div className="grid grid-cols-2 gap-4">
             <Field label="Comprador" error={formErrors.buyerReference}>
-              <select value={form.buyerReference} onChange={e => setField('buyerReference', e.target.value)} className={inputClass(!!formErrors.buyerReference)}>
+              <select value={form.buyerReference} onChange={e => setField('buyerReference', e.target.value)} disabled={loadingBase} className={inputClass(!!formErrors.buyerReference)}>
                 <option value="">Selecione...</option>
-                {mockData.buyers.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                {buyers.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </Field>
             <Field label="Vendedor" error={formErrors.sellerReference}>
-              <select value={form.sellerReference} onChange={e => setField('sellerReference', e.target.value)} className={inputClass(!!formErrors.sellerReference)}>
+              <select value={form.sellerReference} onChange={e => setField('sellerReference', e.target.value)} disabled={loadingBase} className={inputClass(!!formErrors.sellerReference)}>
                 <option value="">Selecione...</option>
-                {mockData.sellers.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                {sellers.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </Field>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <Field label="Armazém" error={formErrors.warehouseReference}>
-              <select value={form.warehouseReference} onChange={e => setField('warehouseReference', e.target.value)} className={inputClass(!!formErrors.warehouseReference)}>
+              <select value={form.warehouseReference} onChange={e => setField('warehouseReference', e.target.value)} disabled={!selectedSeller || loadingWarehouses} className={inputClass(!!formErrors.warehouseReference)}>
                 <option value="">Selecione...</option>
-                {mockData.warehouses.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                {warehouses.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </Field>
             <Field label="Condição de Pagamento" error={formErrors.paymentConditionCode}>
-              <select value={form.paymentConditionCode} onChange={e => setField('paymentConditionCode', e.target.value)} className={inputClass(!!formErrors.paymentConditionCode)}>
+              <select value={form.paymentConditionCode} onChange={e => setField('paymentConditionCode', e.target.value)} disabled={loadingBase} className={inputClass(!!formErrors.paymentConditionCode)}>
                 <option value="">Selecione...</option>
-                {mockData.paymentConditions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                {paymentConditions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </Field>
           </div>
@@ -160,10 +193,11 @@ export default function CreateOrder() {
                 <select
                   value={item.productCode}
                   onChange={e => updateItem(index, 'productCode', e.target.value)}
+                  disabled={!selectedWarehouse || loadingProducts}
                   className={inputClass(!!formErrors.items && !item.productCode)}
                 >
                   <option value="">Selecione...</option>
-                  {mockData.products.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  {products.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
               </div>
               <div className="w-28">
@@ -186,6 +220,18 @@ export default function CreateOrder() {
               </button>
             </div>
           ))}
+        </div>
+        
+        <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+          <div className="border-b border-gray-100 pb-3">
+            <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Subtotal</h2>
+            <input
+              type="text"
+              value={formatCurrency(subtotal)}
+              disabled
+              className={inputClass(false)}
+            />
+          </div>
         </div>
 
         <div className="flex justify-end gap-3">

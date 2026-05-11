@@ -14,8 +14,8 @@ public class FarmaPremiumValidationStrategy implements OrderValidationStrategy {
     public ValidationResult validate(OrderStrategyContext context) {
         List<String> errors = new ArrayList<>();
 
-        if (context.getTotalItems() > MAX_ITEMS) {
-            errors.add("Máximo de " + MAX_ITEMS + " itens por pedido. Quantidade atual: " + context.getTotalItems());
+        if (context.totalItems() > MAX_ITEMS) {
+            errors.add("Máximo de " + MAX_ITEMS + " itens por pedido. Quantidade atual: " + context.totalItems());
         }
 
         return errors.isEmpty() ? ValidationResult.ok() : ValidationResult.failure(errors);

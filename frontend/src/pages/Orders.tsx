@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useOrders } from '../hooks/useOrders'
+import { useList } from '../hooks/useList'
 import type { OrderFilters } from '../api/orders'
 import StatusBadge from '../components/StatusBadge'
 import { formatCurrency, formatDate } from '../utils/format'
 
 export default function Orders() {
   const { data, loading, error, page, search, goToPage, cancel } = useOrders()
+  const { buyers, loadingBase, errorBase } = useList()
   const [filters, setFilters] = useState<OrderFilters>({})
 
-  useEffect(() => { search({}) }, [])
+  useEffect(() => { search({}) }, [search])
 
   function handleSearch(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -52,14 +54,16 @@ export default function Orders() {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1">Comprador (ref)</label>
-            <input
-              type="text"
+            <label className="block text-xs font-medium text-gray-500 mb-1">Comprador</label>
+            <select
               value={filters.buyerRef ?? ''}
               onChange={e => setFilters(f => ({ ...f, buyerRef: e.target.value }))}
-              placeholder="ex: BUYER-001"
+              disabled={loadingBase}
               className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            >
+              <option value="">Todos</option>
+              {buyers.map(b => <option key={b.value} value={b.value}>{b.label}</option>)}
+            </select>
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-500 mb-1">De</label>
@@ -85,8 +89,8 @@ export default function Orders() {
         </div>
       </form>
 
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">{error}</div>
+      {(error || errorBase) && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">{error || errorBase}</div>
       )}
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">

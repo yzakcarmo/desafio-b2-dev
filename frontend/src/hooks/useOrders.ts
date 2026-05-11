@@ -21,18 +21,18 @@ export function useOrders() {
     }
   }, [])
 
-  function search(newFilters: OrderFilters) {
+  const search = useCallback((newFilters: OrderFilters) => {
     setFilters(newFilters)
     setPage(0)
     fetch(0, newFilters)
-  }
+  }, [fetch])
 
-  function goToPage(p: number) {
+  const goToPage = useCallback((p: number) => {
     setPage(p)
     fetch(p, filters)
-  }
+  }, [fetch, filters])
 
-  async function cancel(externalReference: string): Promise<boolean> {
+  const cancel = useCallback(async (externalReference: string): Promise<boolean> => {
     try {
       await cancelOrder(externalReference)
       setData(prev => prev
@@ -46,7 +46,7 @@ export function useOrders() {
       setError(e instanceof Error ? e.message : 'Erro ao cancelar pedido')
       return false
     }
-  }
+  }, [])
 
   return { data, loading, error, page, filters, search, goToPage, cancel }
 }

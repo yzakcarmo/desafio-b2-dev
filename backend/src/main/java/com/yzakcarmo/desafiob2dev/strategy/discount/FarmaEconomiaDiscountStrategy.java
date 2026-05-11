@@ -12,7 +12,7 @@ public class FarmaEconomiaDiscountStrategy implements OrderDiscountStrategy {
 
     @Override
     public DiscountResult calculate(OrderStrategyContext context, PricingResult pricing) {
-        if (context.getMaxInstallments() == 1) {
+        if (context.maxInstallments() == 1) {
             BigDecimal subtotal = pricing.getSubtotal();
             BigDecimal discountValue = subtotal.multiply(VISTA_DISCOUNT_RATE).setScale(2, RoundingMode.HALF_UP);
             return new DiscountResult(discountValue, new BigDecimal("2.00"),

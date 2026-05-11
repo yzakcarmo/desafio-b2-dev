@@ -82,3 +82,15 @@ export interface CreateOrderResponse {
     discount: { value: number; percentage: number; description: string; freeShipping: boolean }
   }
 }
+
+export interface ListResponse {
+  label: string
+  value: string
+  id: string
+}
+
+export interface ProductListResponse {
+  label: string
+  value: string
+  price: number
+}
