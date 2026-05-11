@@ -7,6 +7,7 @@ import type {
   OrderStatistics,
   CreateOrderRequest,
   CreateOrderResponse,
+  ProductListResponse,
 } from '../types'
 
 export interface OrderFilters {
@@ -62,7 +63,7 @@ export async function getWarehouses(sellerId: string): Promise<ListResponse[]> {
   return data
 }
 
-export async function getProducts(warehouseId: string): Promise<ListResponse[]> {
+export async function getProducts(warehouseId: string): Promise<ProductListResponse[]> {
   const { data } = await api.get('/list/products', { params: { warehouseId } })
   return data
 }

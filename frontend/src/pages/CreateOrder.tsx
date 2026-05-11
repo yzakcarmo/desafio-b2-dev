@@ -4,6 +4,7 @@ import { createOrder } from '../api/orders'
 import { ApiError } from '../api/client'
 import { useList } from '../hooks/useList'
 import ApiErrorBanner from '../components/ApiErrorBanner'
+import { formatCurrency } from '../utils/format'
 
 interface Item {
   productCode: string
@@ -62,6 +63,10 @@ export default function CreateOrder() {
     paymentConditionCode: '',
   })
   const [items, setItems] = useState<Item[]>([{ productCode: '', quantity: 1 }])
+  const subtotal = items.reduce((sum, item) => {
+    const product = products.find(({ value }) => value === item.productCode)
+    return sum + (product?.price ?? 0) * item.quantity
+  }, 0)
 
   function setField(field: keyof typeof form, value: string) {
     setForm(f => ({ ...f, [field]: value }))
@@ -71,10 +76,11 @@ export default function CreateOrder() {
       const seller = sellers.find(s => s.value === value)
       setSelectedSeller(seller?.id ?? '')
       setForm(f => ({ ...f, warehouseReference: '' }))
+      setItems([{ productCode: '', quantity: 1 }])
     } else if (field === 'warehouseReference') {
       const warehouse = warehouses.find(w => w.value === value)
       setSelectedWarehouse(warehouse?.id ?? '')
-      setForm(f => ({ ...f, items: [{ productCode: '', quantity: 1 }] }))
+      setItems([{ productCode: '', quantity: 1 }])
     }
   }
 
@@ -214,6 +220,18 @@ export default function CreateOrder() {
               </button>
             </div>
           ))}
+        </div>
+        
+        <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+          <div className="border-b border-gray-100 pb-3">
+            <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Subtotal</h2>
+            <input
+              type="text"
+              value={formatCurrency(subtotal)}
+              disabled
+              className={inputClass(false)}
+            />
+          </div>
         </div>
 
         <div className="flex justify-end gap-3">

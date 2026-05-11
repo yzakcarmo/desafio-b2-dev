@@ -88,3 +88,9 @@ export interface ListResponse {
   value: string
   id: string
 }
+
+export interface ProductListResponse {
+  label: string
+  value: string
+  price: number
+}
