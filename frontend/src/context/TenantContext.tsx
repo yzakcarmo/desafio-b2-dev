@@ -1,15 +1,5 @@
-import { createContext, useContext, useState, type ReactNode } from 'react'
-
-interface TenantConfig {
-  tenant: string
-  authToken: string
-}
-
-interface TenantContextValue extends TenantConfig {
-  setConfig: (config: TenantConfig) => void
-}
-
-const TenantContext = createContext<TenantContextValue | null>(null)
+import { useState, type ReactNode } from 'react'
+import { TenantContext, type TenantConfig } from './tenantCtx'
 
 export function TenantProvider({ children }: { children: ReactNode }) {
   const [config, setConfigState] = useState<TenantConfig>(() => {
@@ -31,10 +21,4 @@ export function TenantProvider({ children }: { children: ReactNode }) {
       {children}
     </TenantContext.Provider>
   )
-}
-
-export function useTenant() {
-  const ctx = useContext(TenantContext)
-  if (!ctx) throw new Error('useTenant must be used within TenantProvider')
-  return ctx
 }

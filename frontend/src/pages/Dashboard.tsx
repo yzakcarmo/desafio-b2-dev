@@ -5,7 +5,7 @@ import { formatCurrency } from '../utils/format'
 export default function Dashboard() {
   const { stats, loading, error, dateFrom, setDateFrom, dateTo, setDateTo, load } = useStatistics()
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [load])
 
   return (
     <div className="p-6 space-y-6">

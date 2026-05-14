@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useTenant } from '../context/TenantContext'
+import { useTenant } from '../hooks/useTenant'
 
 const TENANTS = ['FARMA-DEFAULT', 'FARMA-PREMIUM', 'FARMA-ECONOMIA']
 

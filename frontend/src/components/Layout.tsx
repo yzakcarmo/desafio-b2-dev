@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { NavLink } from 'react-router-dom'
-import { useTenant } from '../context/TenantContext'
+import { useTenant } from '../hooks/useTenant'
 import TenantModal from './TenantModal'
 
 interface Props {

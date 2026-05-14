@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { getStatistics } from '../api/orders'
 import type { OrderStatistics } from '../types'
 
@@ -19,17 +19,25 @@ export function useStatistics() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  async function load(from = dateFrom, to = dateTo) {
+  const dateFromRef = useRef(dateFrom)
+  const dateToRef = useRef(dateTo)
+
+  useEffect(() => { dateFromRef.current = dateFrom }, [dateFrom])
+  useEffect(() => { dateToRef.current = dateTo }, [dateTo])
+
+  const load = useCallback(async (from?: string, to?: string) => {
+    const f = from ?? dateFromRef.current
+    const t = to ?? dateToRef.current
     setLoading(true)
     setError(null)
     try {
-      setStats(await getStatistics(new Date(from).toISOString(), new Date(to).toISOString()))
+      setStats(await getStatistics(new Date(f).toISOString(), new Date(t).toISOString()))
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Erro ao carregar estatísticas')
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   return { stats, loading, error, dateFrom, setDateFrom, dateTo, setDateTo, load }
 }
